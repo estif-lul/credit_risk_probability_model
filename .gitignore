@@ -9,6 +9,10 @@ __pycache__/
 # Data files
 data/
 
+mlruns/
+
+models/
+
 # Distribution / packaging
 .Python
 build/

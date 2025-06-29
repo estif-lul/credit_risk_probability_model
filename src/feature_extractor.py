@@ -12,9 +12,25 @@ from time_feature_extractor import TimeFeatureExtractor
 
 
 def preprocess_features(df):
+    """
+    Preprocesses the input DataFrame by applying feature engineering and transformation pipelines.
+    This function performs the following steps:
+    - Applies median imputation and standard scaling to numeric features ('Amount', 'Value').
+    - Applies most frequent imputation and one-hot encoding to categorical features 
+      ('ProductCategory', 'ProviderId', 'ProductId', 'PricingStrategy', 'ChannelId', 'FraudResult').
+    - Extracts time-based features (hour, day, month, year) from the 'TransactionStartTime' column.
+    - Combines all transformed features into a single DataFrame.
+    - Optionally appends the 'is_high_risk' column to the processed DataFrame if it exists in the input.
+    Parameters:
+        df (pd.DataFrame): Input DataFrame containing raw features.
+    Returns:
+        processed_df (pd.DataFrame): DataFrame containing preprocessed features and, if present, the 'is_high_risk' column.
+        preprocessor (ColumnTransformer): Fitted preprocessor object for transforming new data.
+    """
+
 
     numeric_features = ['Amount', 'Value']
-    categorical_features = ['ProductCategory', 'ProviderId', 'ProductId', 'PricingStrategy', 'ChannelId', 'FraudResult', 'is_high_risk']
+    categorical_features = ['ProductCategory', 'ProviderId', 'ProductId', 'PricingStrategy', 'ChannelId', 'FraudResult']
     time_column = 'TransactionStartTime'
 
     # Numeric pipeline
@@ -33,6 +49,7 @@ def preprocess_features(df):
         ('time_features', TimeFeatureExtractor(time_column=time_column))
     ])
 
+
     preprocessor = ColumnTransformer(transformers=[
         ('time', time_pipeline, [time_column]),
         ('num', numeric_pipeline, numeric_features),
@@ -47,18 +64,37 @@ def preprocess_features(df):
         ['TransactionHour', 'TransactionDay', 'TransactionMonth', 'TransactionYear'])
     
     processed_df = pd.DataFrame(features.toarray(), columns=feature_names)
+    processed_df = pd.concat([processed_df, df['is_high_risk'].reset_index(drop=True)], axis=1) if 'is_high_risk' in df.columns else pd.DataFrame()
 
     return processed_df, preprocessor
-    # processed_df.to_csv('data/processed/processed_features.csv', index=False)
-
-# def preprocess_features(df, preprocessor):
-#     features = preprocessor.fit_transform(df)
-#     feature_names = (
-#         numeric_features + 
-#         list(preprocessor.named_transformers_['cat'].named_steps['onehot'].get_feature_names_out(categorical_features)) +
-#         ['TransactionHour', 'TransactionDay', 'TransactionMonth', 'TransactionYear'])
 
 def aggregate_customer_features(df):
+    """
+    Aggregates transaction-level features into customer-level features.
+    Groups the input DataFrame by 'CustomerId' and computes various aggregate statistics
+    for each customer, including total and average transaction amounts, transaction count,
+    total and average value, and diversity metrics for channels and product categories.
+    Parameters:
+        df (pd.DataFrame): Input DataFrame containing at least the following columns:
+            - 'CustomerId'
+            - 'Amount'
+            - 'TransactionId'
+            - 'Value'
+            - 'ChannelId'
+            - 'ProductCategory'
+    Returns:
+        pd.DataFrame: DataFrame with one row per customer and the following columns:
+            - 'CustomerId'
+            - 'total_transaction_amount'
+            - 'avg_transaction_amount'
+            - 'std_transaction_amount'
+            - 'transaction_count'
+            - 'total_value'
+            - 'avg_value'
+            - 'channel_diversity'
+            - 'product_diversity'
+    """
+
     customer_df = df.groupby('CustomerId').agg(
         total_transaction_amount=('Amount', 'sum'),
         avg_transaction_amount=('Amount', 'mean'),
@@ -74,6 +110,30 @@ def aggregate_customer_features(df):
 
 
 def iv_woe(data, target, bins=10, show_woe=False):
+    """
+    Calculates the Information Value (IV) and Weight of Evidence (WoE) for each feature in a DataFrame with respect to a binary target variable.
+    Parameters
+    ----------
+    data : pandas.DataFrame
+        The input DataFrame containing the features and the target variable.
+    target : str
+        The name of the target column in the DataFrame. The target should be binary (0/1).
+    bins : int, optional (default=10)
+        The number of bins to use for numeric features with more than 10 unique values. Binning is performed using quantiles.
+    show_woe : bool, optional (default=False)
+        If True, prints the WoE table for each feature.
+    Returns
+    -------
+    newDF : pandas.DataFrame
+        A DataFrame containing the Information Value (IV) for each feature.
+    woeDF : pandas.DataFrame
+        A DataFrame containing the WoE calculation details for each feature and bin/category.
+    Notes
+    -----
+    - Features with more than 10 unique numeric values are binned using quantile-based discretization.
+    - WoE and IV are commonly used in credit scoring and risk modeling to evaluate the predictive power of features.
+    - Small event/non-event counts are floored at 0.5 to avoid division by zero and infinite WoE values.
+    """
     
     #Empty Dataframe
     newDF,woeDF = pd.DataFrame(), pd.DataFrame()
@@ -106,11 +166,3 @@ def iv_woe(data, target, bins=10, show_woe=False):
         if show_woe == True:
             print(d)
     return newDF, woeDF
-
-if __name__ == "__main__":
-    df = pd.read_csv('data/raw/data.csv')
-    # main(df)
-    # customer_features = aggregate_customer_features(df)
-    # print(customer_features.head())
-    # customer_features.to_csv('data/processed/customer_features.csv', index=False)
-    n_df, w_df = iv_woe(df, 'FraudResult', bins=10, show_woe=True)

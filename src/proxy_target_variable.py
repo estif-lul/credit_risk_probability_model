@@ -34,6 +34,16 @@ def calculate_rfm(df, snaphot_date=None):
     return rfm
 
 def scale_rfm(rfm_df):
+    """
+    Scales the 'Recency', 'Frequency', and 'Monetary' columns of the given DataFrame using standardization.
+    Parameters:
+        rfm_df (pandas.DataFrame): DataFrame containing at least the columns 'Recency', 'Frequency', and 'Monetary'.
+    Returns:
+        tuple:
+            - numpy.ndarray: Scaled values of the 'Recency', 'Frequency', and 'Monetary' columns.
+            - StandardScaler: The fitted StandardScaler object used for transformation.
+    """
+
     rfm_values = rfm_df[['Recency', 'Frequency', 'Monetary']]
     scaler = StandardScaler()
     scaled_rfm = scaler.fit_transform(rfm_values)
@@ -41,11 +51,32 @@ def scale_rfm(rfm_df):
     return scaled_rfm, scaler
 
 def create_rfm_clusters(scaled_rfm, random_state=42):
+    """
+    Clusters RFM (Recency, Frequency, Monetary) scaled data using KMeans clustering.
+    Args:
+        scaled_rfm (array-like or DataFrame): The scaled RFM data to be clustered.
+        random_state (int, optional): Random seed for reproducibility. Defaults to 42.
+    Returns:
+        ndarray: Array of cluster labels assigned to each observation in the input data.
+    """
+
     kmeans = KMeans(n_clusters=3, random_state=random_state)
     clusters = kmeans.fit_predict(scaled_rfm)
     return clusters
 
 def assign_proxy_label(rfm_df, clusters):
+    """
+    Assigns a proxy high-risk label to each record in the RFM DataFrame based on cluster assignment.
+    This function takes an RFM (Recency, Frequency, Monetary) DataFrame and a corresponding cluster assignment array,
+    assigns the cluster labels to the DataFrame, and identifies the cluster with the lowest average Frequency and Monetary values
+    as the "high risk" cluster. It then creates a new binary column 'is_high_risk' indicating whether each record belongs to the high-risk cluster.
+    Args:
+        rfm_df (pd.DataFrame): DataFrame containing RFM features for each record.
+        clusters (array-like): Cluster labels corresponding to each record in rfm_df.
+    Returns:
+        pd.DataFrame: The input DataFrame with added 'cluster' and 'is_high_risk' columns.
+    """
+
     rfm_df['cluster'] = clusters
 
     # Compute mean values per cluster to identify least engaged one
