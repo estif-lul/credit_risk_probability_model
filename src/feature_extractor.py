@@ -11,10 +11,10 @@ from xverse.transformer import WOE
 from time_feature_extractor import TimeFeatureExtractor
 
 
-def main(df):
+def preprocess_features(df):
 
     numeric_features = ['Amount', 'Value']
-    categorical_features = ['ProductCategory', 'ProviderId', 'ProductId', 'PricingStrategy', 'ChannelId']
+    categorical_features = ['ProductCategory', 'ProviderId', 'ProductId', 'PricingStrategy', 'ChannelId', 'FraudResult', 'is_high_risk']
     time_column = 'TransactionStartTime'
 
     # Numeric pipeline
@@ -34,11 +34,12 @@ def main(df):
     ])
 
     preprocessor = ColumnTransformer(transformers=[
+        ('time', time_pipeline, [time_column]),
         ('num', numeric_pipeline, numeric_features),
-        ('cat', categorical_pipeline, categorical_features),
-        ('time', time_pipeline, [time_column])
+        ('cat', categorical_pipeline, categorical_features)
     ])
 
+    print(df.columns)
     features = preprocessor.fit_transform(df)
     feature_names = (
         numeric_features + 
@@ -46,7 +47,9 @@ def main(df):
         ['TransactionHour', 'TransactionDay', 'TransactionMonth', 'TransactionYear'])
     
     processed_df = pd.DataFrame(features.toarray(), columns=feature_names)
-    processed_df.to_csv('data/processed/processed_features.csv', index=False)
+
+    return processed_df, preprocessor
+    # processed_df.to_csv('data/processed/processed_features.csv', index=False)
 
 # def preprocess_features(df, preprocessor):
 #     features = preprocessor.fit_transform(df)
