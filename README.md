@@ -3,7 +3,7 @@
 This project provides a machine learning-based solution for predicting the probability of credit risk. It is designed to help financial institutions assess the likelihood of default for loan applicants, enabling better risk management and decision-making.
 
 ## Table of Contents
-
+- [Credit Scoring Business Understanding](#credit-scoring-business-understanding)
 - [Features](#features)
 - [Installation](#installation)
 - [Usage](#usage)
@@ -13,6 +13,20 @@ This project provides a machine learning-based solution for predicting the proba
 - [Evaluation Metrics](#evaluation-metrics)
 - [Contributing](#contributing)
 - [License](#license)
+
+## Credit Scoring Business Understanding
+
+### Basel II Accord: The Need for Interpretability
+
+The Basel II Capital Accord highlights the necessity for accurate and transparent risk quantification to maintain financial system stability. Credit scoring models must be both predictive and interpretable, allowing financial institutions to justify credit decisions to regulators. Techniques such as Weight of Evidence (WoE) and Information Value (IV) support explainability while effectively quantifying risk.
+
+### Necessity of a Proxy Variable
+
+In the absence of an explicit "default" indicator in the dataset, a proxy variable is constructed using Recency, Frequency, and Monetary (RFM) metrics. This binary target assumes that customers with low transaction activity and value are more likely to default. While this enables modeling without ground-truth labels, it introduces the risk of misclassification. Therefore, thorough documentation and regular recalibration of the proxy are essential.
+
+### Model Complexity vs. Regulatory Simplicity
+
+There is a trade-off between model interpretability and predictive performance. Logistic regression models with WoE encoding offer simplicity, transparency, and ease of audit, making them suitable for regulatory requirements. More complex models, such as gradient boosting machines (GBM), may provide higher accuracy but reduce interpretability. In regulated environments, model choice should balance explainability for audits and performance for internal risk management.
 
 ## Features
 
