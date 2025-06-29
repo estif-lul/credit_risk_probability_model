@@ -1,0 +1,44 @@
+# config.yaml
+
+project:
+  name: credit_risk_probability_model
+  version: 1.0.0
+  author: est-lul
+
+data:
+  train_path: data/train.csv
+  test_path: data/test.csv
+  target_column: default
+  features:
+    - age
+    - income
+    - loan_amount
+    - employment_status
+    - credit_score
+
+preprocessing:
+  missing_values: mean
+  categorical_encoding: onehot
+  scaling: standard
+
+model:
+  type: logistic_regression
+  parameters:
+    C: 1.0
+    max_iter: 100
+    solver: lbfgs
+    random_state: 42
+
+evaluation:
+  metrics:
+    - accuracy
+    - roc_auc
+    - f1_score
+  cross_validation:
+    folds: 5
+    shuffle: true
+    random_state: 42
+
+output:
+  model_path: models/credit_risk_model.pkl
+  report_path: reports/evaluation_report.json
