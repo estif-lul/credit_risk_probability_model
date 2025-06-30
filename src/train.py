@@ -7,7 +7,7 @@ from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 import mlflow
 
-df = pd.read_csv('data/processed/processed_data.csv')
+df = pd.read_csv('data/processed/processed_customers.csv')
 X = df.drop(columns=['is_high_risk'])
 y = df['is_high_risk']
 
@@ -56,30 +56,23 @@ models = {
 mlflow.set_experiment('credit-risk-modle')
 
 for name, model in models.items():
-    with mlflow.start_run(run_name=name):
+    with mlflow.start_run(run_name=name) as run:
         model.fit(X_train, y_train)
+        auc = roc_auc_score(y_test, model.predict_proba(X_test)[:, 1])
 
         input_example = X_train.iloc[:1]
 
         metrics = evaluate_model(model, X_test, y_test)
+        mlflow.set_tag("model_type", name)
         mlflow.sklearn.log_model(model, name = "model", input_example=input_example)
         mlflow.log_params(model.get_params())
         mlflow.log_metrics(metrics)
         
+        # Register the model in the Model Registry
+        model_uri = f"runs:/{run.info.run_id}/model"
+        mlflow.register_model(model_uri=model_uri, name=name)
     print(f"{name} logged with metrics: {metrics}")
 
-# param_grid = {
-#     'n_estimators': [50, 100],
-#     'max_depth': [3, 5]
-# }
 
-# grid = GridSearchCV(GradientBoostingClassifier(random_state=42), param_grid=param_grid, cv=3, scoring='f1')
-# grid.fit(X_train, y_train)
 
-# best_model = grid.best_estimator_
-
-# mlflow.register_model(
-#     model_uri="runs:/{run_id}/model",
-#     name="CreditRiskGBM"
-# )
 
